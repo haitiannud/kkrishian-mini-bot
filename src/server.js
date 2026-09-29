@@ -1,0 +1,8 @@
+import express from "express";import {config} from "./config.js";import {startSession,getSession,listSessions} from "./core/whatsapp.js";import {randomId} from "./utils/text.js";import path from "node:path";import {fileURLToPath} from "node:url";
+const app=express();const pub=path.resolve(path.dirname(fileURLToPath(import.meta.url)),"../public");app.use(express.json());app.use(express.static(pub));
+app.get("/health",(_q,r)=>r.json({status:"healthy",bot:config.botName,uptime:process.uptime(),sessions:listSessions().length}));
+const auth=req=>config.pairApiKey&&req.get("x-pair-api-key")===config.pairApiKey;
+app.post("/api/pair",async(req,res)=>{try{if(!auth(req))return res.status(401).json({ok:false,error:"Invalid pairing API key"});const n=String(req.body?.number||"").replace(/\D/g,"");if(n.length<7)return res.status(400).json({ok:false,error:"Enter an international WhatsApp number without +"});const id=randomId("SES");const s=await startSession({sessionId:id,number:n,commands:globalThis.commandRegistry});res.json({ok:true,sessionId:s.id,userId:s.userId,status:s.status,pairingCode:s.pairingCode});}catch(e){res.status(500).json({ok:false,error:e.message})}});
+app.get("/api/pair/:id",(req,res)=>{const s=getSession(req.params.id);if(!s)return res.status(404).json({ok:false,error:"Session not found"});res.json({ok:true,sessionId:s.id,userId:s.userId,status:s.status,pairingCode:s.pairingCode});});
+app.get("/api/sessions",(req,res)=>{if(!auth(req))return res.status(401).json({ok:false});res.json({ok:true,sessions:listSessions()})});
+export const startHttpServer=()=>app.listen(config.port,"0.0.0.0",()=>console.log(`[HTTP] listening on ${config.port}`));
