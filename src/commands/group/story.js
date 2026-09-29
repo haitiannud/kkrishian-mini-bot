@@ -1,0 +1,1 @@
+import {getStory} from "../../database/store.js";export const command={name:"story",async execute({msg,isGroup,reply}){if(!isGroup)return reply("❌ Group only.");const s=getStory(msg.key.remoteJid);if(!s)return reply("📖 No active story.");await reply(`📖 GROUP STORY\n\n${s.text}\n\n⏱️ Expires: ${new Date(s.expiresAt).toLocaleString()}`)}};
