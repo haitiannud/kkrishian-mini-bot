@@ -1,0 +1,3 @@
+import fs from "node:fs/promises";import path from "node:path";import {fileURLToPath,pathToFileURL} from "node:url";
+const dir=path.resolve(path.dirname(fileURLToPath(import.meta.url)),"../commands");
+export async function loadCommands(){const r=new Map();async function walk(d){for(const e of await fs.readdir(d,{withFileTypes:true})){const f=path.join(d,e.name);if(e.isDirectory())await walk(f);else if(e.name.endsWith(".js")){const m=await import(pathToFileURL(f).href);if(m.command?.name){for(const n of [m.command.name,...(m.command.aliases||[])])r.set(n.toLowerCase(),m.command);}}}}await walk(dir);return r;}
